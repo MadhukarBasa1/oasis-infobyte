@@ -1,6 +1,5 @@
 import os
 import joblib
-import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
@@ -11,76 +10,53 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(ROOT_DIR, "data", "car_price_data.csv")
+DATA_PATH = os.path.join(ROOT_DIR, "data", "car_data.csv")
 MODEL_PATH = os.path.join(ROOT_DIR, "models", "car_price_model.joblib")
 
 os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
 os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
 
-def build_dataset(n_rows=300, seed=42):
-    rng = np.random.default_rng(seed)
-    brands = ["Toyota", "Honda", "Ford", "BMW", "Mercedes", "Tata", "Hyundai"]
-    fuel_types = ["Petrol", "Diesel", "Electric"]
-    transmissions = ["Manual", "Automatic"]
+def resolve_data_path():
+    preferred_path = os.path.join(ROOT_DIR, "data", "car_data.csv")
+    legacy_path = os.path.join(ROOT_DIR, "data", "car_price_data.csv")
+    if os.path.exists(preferred_path):
+        return preferred_path
+    if os.path.exists(legacy_path):
+        return legacy_path
+    return preferred_path
 
-    data = []
-    for _ in range(n_rows):
-        brand = rng.choice(brands)
-        year = int(rng.integers(2015, 2025))
-        mileage = int(rng.integers(5000, 120000))
-        horsepower = int(rng.integers(80, 320))
-        engine_size = round(float(rng.uniform(1.0, 3.2)), 1)
-        fuel_type = rng.choice(fuel_types)
-        transmission = rng.choice(transmissions)
-        owner_count = int(rng.integers(1, 5))
 
-        brand_multiplier = {
-            "Toyota": 1.02,
-            "Honda": 1.04,
-            "Ford": 0.95,
-            "BMW": 1.18,
-            "Mercedes": 1.22,
-            "Tata": 0.90,
-            "Hyundai": 0.93,
-        }[brand]
-        fuel_bonus = {"Petrol": 10000, "Diesel": 18000, "Electric": 22000}[fuel_type]
-        transmission_bonus = 12000 if transmission == "Automatic" else 0
-        owner_penalty = owner_count * 15000
+def get_feature_columns():
+    return ["Car_Name", "Year", "Present_Price", "Driven_kms", "Fuel_Type", "Selling_type", "Transmission", "Owner"]
 
-        price = (
-            500000
-            + (year - 2015) * 50000
-            - mileage * 0.8
-            + horsepower * 1500
-            + engine_size * 70000
-            + fuel_bonus
-            + transmission_bonus
-            - owner_penalty
-        )
-        price = int(round(price * brand_multiplier + rng.normal(0, 25000)))
-        price = max(180000, price)
 
-        data.append(
-            {
-                "brand": brand,
-                "year": year,
-                "mileage": mileage,
-                "horsepower": horsepower,
-                "engine_size": engine_size,
-                "fuel_type": fuel_type,
-                "transmission": transmission,
-                "owner_count": owner_count,
-                "price": price,
-            }
-        )
+def load_training_data(path=None):
+    data_path = path or resolve_data_path()
+    df = pd.read_csv(data_path)
 
-    return pd.DataFrame(data)
+    df = df.copy()
+    if "Selling_Price" in df.columns:
+        df["price"] = df["Selling_Price"]
+    elif "price" in df.columns:
+        df["price"] = df["price"]
+    else:
+        raise ValueError("The dataset must contain a 'Selling_Price' or 'price' column for training.")
+
+    if "Selling_Price" not in df.columns:
+        df["Selling_Price"] = df["price"]
+
+    required_columns = get_feature_columns() + ["price"]
+    missing_columns = [column for column in required_columns if column not in df.columns]
+    if missing_columns:
+        raise ValueError(f"The dataset is missing required columns: {missing_columns}")
+
+    return df[[*get_feature_columns(), "price", "Selling_Price"]].copy()
 
 
 def build_pipeline():
-    categorical_features = ["brand", "fuel_type", "transmission"]
-    numeric_features = ["year", "mileage", "horsepower", "engine_size", "owner_count"]
+    categorical_features = ["Car_Name", "Fuel_Type", "Selling_type", "Transmission"]
+    numeric_features = ["Year", "Present_Price", "Driven_kms", "Owner"]
 
     preprocessing = ColumnTransformer(
         transformers=[
@@ -100,12 +76,7 @@ def build_pipeline():
 
 
 def train_model():
-    if not os.path.exists(DATA_PATH):
-        df = build_dataset()
-        df.to_csv(DATA_PATH, index=False)
-    else:
-        df = pd.read_csv(DATA_PATH)
-
+    df = load_training_data(resolve_data_path())
     X = df.drop(columns=["price"])
     y = df["price"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -119,7 +90,7 @@ def train_model():
 
     joblib.dump(pipeline, MODEL_PATH)
 
-    print(f"Dataset saved at: {DATA_PATH}")
+    print(f"Dataset used: {resolve_data_path()}")
     print(f"Model saved at: {MODEL_PATH}")
     print(f"Mean absolute error: ₹{mae:,.0f}")
     print(f"R2 score: {r2:.3f}")

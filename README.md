@@ -1,10 +1,10 @@
 # Car Price Prediction with Machine Learning
 
-This project demonstrates a simple end-to-end regression workflow for predicting car prices using a machine learning model.
+This project trains a regression model on your current car dataset to predict selling prices from the available car attributes.
 
 ## What the project does
-- Generates a synthetic car dataset with features such as brand, year, mileage, horsepower, engine size, fuel type, transmission, and owner count.
-- Trains a regression model to estimate the price of a car.
+- Reads the current dataset from data/car_data.csv.
+- Trains a regression model using the car name, year, present price, driven kilometers, fuel type, seller type, transmission, and owner count.
 - Saves the trained model and allows you to make new predictions from the command line.
 
 ## Setup
@@ -23,11 +23,11 @@ python src/train_model.py
 ## Predict a car price
 
 ```bash
-python src/predict.py --brand Toyota --year 2022 --mileage 18000 --horsepower 180 --engine-size 2.0 --fuel-type Petrol --transmission Automatic --owner-count 1
+python src/predict.py --car-name ritz --year 2014 --present-price 5.59 --driven-kms 27000 --fuel-type Petrol --selling-type Dealer --transmission Manual --owner 0
 ```
 
 ## Project structure
-- src/train_model.py: dataset generation, training, and model saving
+- src/train_model.py: dataset loading, training, and model saving
 - src/predict.py: command-line prediction interface
-- data/car_price_data.csv: generated dataset
+- data/car_data.csv: current car dataset
 - models/car_price_model.joblib: trained model

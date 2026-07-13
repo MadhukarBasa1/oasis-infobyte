@@ -5,7 +5,7 @@ import pandas as pd
 from train_model import MODEL_PATH, load_model
 
 
-def predict_price(brand, year, mileage, horsepower, engine_size, fuel_type, transmission, owner_count):
+def predict_price(car_name, year, present_price, driven_kms, fuel_type, selling_type, transmission, owner):
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError("Model not found. Train the model first by running python src/train_model.py")
 
@@ -13,14 +13,14 @@ def predict_price(brand, year, mileage, horsepower, engine_size, fuel_type, tran
     input_df = pd.DataFrame(
         [
             {
-                "brand": brand,
-                "year": year,
-                "mileage": mileage,
-                "horsepower": horsepower,
-                "engine_size": engine_size,
-                "fuel_type": fuel_type,
-                "transmission": transmission,
-                "owner_count": owner_count,
+                "Car_Name": car_name,
+                "Year": year,
+                "Present_Price": present_price,
+                "Driven_kms": driven_kms,
+                "Fuel_Type": fuel_type,
+                "Selling_type": selling_type,
+                "Transmission": transmission,
+                "Owner": owner,
             }
         ]
     )
@@ -29,24 +29,24 @@ def predict_price(brand, year, mileage, horsepower, engine_size, fuel_type, tran
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Predict a car price")
-    parser.add_argument("--brand", default="Toyota")
-    parser.add_argument("--year", type=int, default=2022)
-    parser.add_argument("--mileage", type=int, default=18000)
-    parser.add_argument("--horsepower", type=int, default=180)
-    parser.add_argument("--engine-size", type=float, default=2.0)
+    parser = argparse.ArgumentParser(description="Predict a car selling price")
+    parser.add_argument("--car-name", default="ritz")
+    parser.add_argument("--year", type=int, default=2014)
+    parser.add_argument("--present-price", type=float, default=5.59)
+    parser.add_argument("--driven-kms", type=int, default=27000)
     parser.add_argument("--fuel-type", default="Petrol")
-    parser.add_argument("--transmission", default="Automatic")
-    parser.add_argument("--owner-count", type=int, default=1)
+    parser.add_argument("--selling-type", default="Dealer")
+    parser.add_argument("--transmission", default="Manual")
+    parser.add_argument("--owner", type=int, default=0)
     args = parser.parse_args()
 
     predict_price(
-        brand=args.brand,
+        car_name=args.car_name,
         year=args.year,
-        mileage=args.mileage,
-        horsepower=args.horsepower,
-        engine_size=args.engine_size,
+        present_price=args.present_price,
+        driven_kms=args.driven_kms,
         fuel_type=args.fuel_type,
+        selling_type=args.selling_type,
         transmission=args.transmission,
-        owner_count=args.owner_count,
+        owner=args.owner,
     )
